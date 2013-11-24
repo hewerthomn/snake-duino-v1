@@ -1,5 +1,17 @@
+/*
+* ----------------------------------------------------------------------------
+* "THE BEER-WARE LICENSE" (Revision 42):
+* <phk@FreeBSD.ORG> wrote this file. As long as you retain this notice you
+* can do whatever you want with this stuff. If we meet some day, and you think
+* this stuff is worth it, you can buy me a beer in return Poul-Henning Kamp
+* ----------------------------------------------------------------------------
+*/
 /**
 *  Snake Duino v1
+*
+* Nokia 5110 LCD attached to pins 7, 6, 5, 4, 3
+* Active Buzzer attached to pin 8
+* Push-buttons attached to pins A2, A3, A4, A5
 *
 * Inspirated in Snake v1.0, Ouarrak Ayoub
 * http://pastebin.com/iAVt9AGJ
@@ -8,22 +20,25 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 
+/* pins */
+#define SPEAKER_PIN 8
+
 /* constants */
-#define LEFT   1
-#define RIGHT  2
-#define UP     3
-#define DOWN   4
+#define UP    1
+#define RIGHT 2
+#define DOWN  3
+#define LEFT  4
+
+/* frame size */
 #define MAX_WIDTH  84
 #define MAX_HEIGHT 48
 
 /* defaults */
-#define ORIGINAL  true
+#define ORIGINAL  false
 #define SNAKE_LEN 10
 
 /* lcd display */
 Adafruit_PCD8544 lcd = Adafruit_PCD8544(7, 6, 5, 4, 3);
-
-int speakerPin = 8;
 
 int x = 5, y = 5;
     
@@ -35,15 +50,10 @@ int xFood = 0, yFood = 0;
 
 int point = 0, points = 10;
 
-boolean left  = false,
-        right = true,
-        up    = false,
-        down  = false,
-        pause = true;
-        
-int dr = 0,
-    dc = 1,
-    i;
+/* directions */
+int dr = 0, dc = 1, i;
+    
+boolean left = false, right = true, up = false, down = false;
 
 // vetor containing the coordinates of the individual parts
 // of the snake {cols[0], row[0]}, corresponding to the head
@@ -53,18 +63,20 @@ int snakeCols[260];
 // of the snake {cols [snake_lenght], row [snake_lenght]} correspond to the tail
 int snakeRow[260];
 
+/* snake lenght */
 int snakeLen = SNAKE_LEN;
 
-int level = 0,
-    time  = 20;
+
+int level = 0, time = 20;
     
 // sensors input
 int btUp, btDown, btRight, btLeft;
 
 void(* reset)(void) = 0;
+
 /*
-* setup
-*/
+ * setup
+ */
 void setup()
 {
   Serial.begin(9600);
@@ -73,13 +85,8 @@ void setup()
   lcd.begin();
   lcd.setContrast(60);
   
-  pinMode(speakerPin, OUTPUT);
-  digitalWrite(speakerPin, LOW);
-  
-  //  pinMode(9,  OUTPUT);
-//  pinMode(10, OUTPUT);
-//  digitalWrite(9,  HIGH);
-//  digitalWrite(10, HIGH);
+  pinMode(SPEAKER_PIN, OUTPUT);
+  digitalWrite(SPEAKER_PIN, LOW);
   
   xFood = lcd.width()  / 2;
   yFood = lcd.height() / 2;
@@ -88,8 +95,8 @@ void setup()
 }
 
 /*
-*  loop
-*/
+ *  loop
+ */
 void loop()
 {
   xC = snakeCols[0];
@@ -168,6 +175,9 @@ void loop()
   delay(time);
 }
 
+/*
+ * eatFood
+ */
 void eatFood()
 {
   beep(2000, 10);
@@ -183,6 +193,9 @@ void eatFood()
   drawSnake();  
 }
 
+/*
+ * drawSnake
+ */
 void drawSnake()
 {
   lcd.drawRect(0, 0, MAX_WIDTH, MAX_HEIGHT, BLACK);
@@ -210,14 +223,6 @@ void drawSnake()
  */
 void moveSnake(int k, int l, int m, int j)
 {
-  const int me = 9;
-  /* PAUSE */
-  if(digitalRead(me) == HIGH)
-  {
-    Serial.println("Pause!");
-//    showPause();    
-  }
-  
   /* LEFT */
   if(k > 900 and right == false)
   {
@@ -247,6 +252,9 @@ void moveSnake(int k, int l, int m, int j)
   }
 }
 
+/*
+ * showPause
+ */
 void showPause()
 {
   lcd.clearDisplay();
@@ -309,10 +317,10 @@ void direc(int d)
 {
   switch(d)
   {
-    case 1: { left=true ; right=false; up=false; down=false; dr = 0; dc = -1;} break;
-    case 2: { left=false; right=true ; up=false; down=false; dr = 0; dc = +1;} break;
-    case 3: { left=false; right=false; up=true ; down=false; dr = -1; dc = 0;} break;
-    case 4: { left=false; right=false; up=false; down=true ; dr = +1; dc = 0;} break;
+    case UP:    { left=false; right=false; up=true ; down=false; dr = -1; dc =  0;} break;
+    case RIGHT: { left=false; right=true ; up=false; down=false; dr =  0; dc =  1;} break;
+    case DOWN:  { left=false; right=false; up=false; down=true ; dr =  1; dc =  0;} break;
+    case LEFT:  { left=true ; right=false; up=false; down=false; dr =  0; dc = -1;} break;
   }
 }
 
@@ -337,7 +345,6 @@ void gameover()
   
   lcd.clearDisplay();
   lcd.setTextSize(2);
-  lcd.println("");
   lcd.println("  Try");
   lcd.println(" Again!");
   lcd.display();  
@@ -350,25 +357,6 @@ void gameover()
   resetGame();  
 }
 
-/*
- * beep
- */
-void beep(int frequencyInHertz, long timeInMilliseconds)
-{
-  int x;
-  long delayAmount = (long)(1000000/frequencyInHertz);
-  long loopTime    = (long)((timeInMilliseconds*1000)/(delayAmount*2));
-  for(x=0; x<loopTime; x++)
-  {
-    digitalWrite(speakerPin, HIGH);
-    delayMicroseconds(delayAmount);
-    digitalWrite(speakerPin, LOW);
-    delayMicroseconds(delayAmount);
-  }
-  
-  delay(2);
-  // a little delay to make all notes sound separate
-}
 
 /*
  * resetGame
@@ -404,11 +392,17 @@ void intro()
   lcd.println("v1");
   lcd.setTextColor(BLACK);
   lcd.println("");
-  lcd.println("");
   lcd.println("By");
   lcd.println("hewertho.mn");
+  
+  if(ORIGINAL)
+  {
+    lcd.setTextColor(WHITE, BLACK);
+    lcd.println("Original mode");
+    lcd.setTextColor(BLACK);
+  }
   lcd.display();
-  delay(3400);
+  delay(3000);
   
   lcd.clearDisplay();
   lcd.setTextSize(2);
@@ -416,6 +410,25 @@ void intro()
   lcd.println(" Enjoy!");
   lcd.display();
   lcd.setTextColor(BLACK);
-  delay(2000);
+  delay(1500);
 }
 
+/*
+ * beep
+ */
+void beep(int frequencyInHertz, long timeInMilliseconds)
+{
+  int x;
+  long delayAmount = (long)(1000000/frequencyInHertz);
+  long loopTime    = (long)((timeInMilliseconds*1000)/(delayAmount*2));
+  for(x=0; x<loopTime; x++)
+  {
+    digitalWrite(SPEAKER_PIN, HIGH);
+    delayMicroseconds(delayAmount);
+    digitalWrite(SPEAKER_PIN, LOW);
+    delayMicroseconds(delayAmount);
+  }
+  
+  delay(2);
+  // a little delay to make all notes sound separate
+}
