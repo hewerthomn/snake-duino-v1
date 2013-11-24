@@ -83,7 +83,6 @@ void setup()
   randomSeed(analogRead(1));
   
   lcd.begin();
-  lcd.setContrast(60);
   
   pinMode(SPEAKER_PIN, OUTPUT);
   digitalWrite(SPEAKER_PIN, LOW);
@@ -98,6 +97,14 @@ void setup()
  *  loop
  */
 void loop()
+{
+  snake();
+}
+
+/*
+ * snake
+ */
+void snake()
 {
   xC = snakeCols[0];
   yC = snakeRow[0];
